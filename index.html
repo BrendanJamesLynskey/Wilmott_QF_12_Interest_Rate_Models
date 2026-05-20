@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wilmott QF 12 &mdash; Interest Rate Models</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+    <style>
+        :root {
+            --bg-primary: #0a0a0a; --bg-card: #0d1117; --bg-code: #161b22;
+            --text-primary: #e6edf3; --text-secondary: #8b949e;
+            --accent: #fbbf24; --accent-dim: #fbbf2444; --accent-glow: #fbbf2433;
+            --accent-2: #f472b6; --accent-3: #a78bfa; --accent-4: #34d399;
+            --accent-5: #60a5fa;
+            --border: #21262d;
+            --font-display: 'Space Grotesk', sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+            --font-body: 'Inter', sans-serif;
+            --max-width: 900px;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body { background: var(--bg-primary); color: var(--text-primary); font-family: var(--font-body); font-size: 17px; line-height: 1.7; overflow-x: hidden; }
+        .hero { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2rem 1.5rem; text-align: center; position: relative; }
+        .hero::before { content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 700px; height: 600px; background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%); pointer-events: none; z-index: 0; }
+        .hero > * { position: relative; z-index: 1; }
+        .series-label { font-family: var(--font-mono); font-size: 0.85rem; color: var(--accent); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 1rem; }
+        .hero h1 { font-family: var(--font-display); font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 700; color: var(--text-primary); line-height: 1.2; margin-bottom: 1rem; }
+        .hero h1 .accent { color: var(--accent); }
+        .hero .subtitle { font-size: 1.1rem; color: var(--text-secondary); max-width: 640px; margin-bottom: 2rem; }
+        .tags { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin-bottom: 2.5rem; }
+        .tag { font-family: var(--font-mono); font-size: 0.75rem; padding: 0.25rem 0.75rem; border-radius: 999px; border: 1px solid var(--accent); color: var(--accent); background: var(--accent-dim); white-space: nowrap; }
+        .pipeline { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.25rem; margin-bottom: 1rem; max-width: var(--max-width); }
+        .pipeline-step { font-family: var(--font-mono); font-size: 0.7rem; padding: 0.3rem 0.7rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; color: var(--text-secondary); white-space: nowrap; }
+        .pipeline-arrow { color: var(--accent); font-size: 0.9rem; font-weight: 700; }
+        .slide { min-height: 100vh; max-width: var(--max-width); margin: 0 auto; padding: 4rem 1.5rem; position: relative; display: flex; flex-direction: column; justify-content: center; }
+        .slide-number { font-family: var(--font-display); font-size: 5rem; font-weight: 700; color: var(--accent-dim); position: absolute; top: 2rem; right: 1.5rem; line-height: 1; user-select: none; }
+        .slide h2 { font-family: var(--font-display); font-size: 1.9rem; font-weight: 700; color: var(--accent); margin-bottom: 1.5rem; line-height: 1.25; }
+        .slide h3 { font-family: var(--font-display); font-size: 1.3rem; font-weight: 600; color: var(--text-primary); margin-top: 1.5rem; margin-bottom: 0.75rem; }
+        .slide p { margin-bottom: 1rem; color: var(--text-secondary); }
+        .slide p strong { color: var(--text-primary); }
+        .slide ul, .slide ol { margin-bottom: 1rem; padding-left: 1.5rem; color: var(--text-secondary); }
+        .slide li { margin-bottom: 0.4rem; }
+        .slide li strong { color: var(--text-primary); }
+        .slide code { background: var(--bg-code); padding: 0.1rem 0.35rem; border-radius: 3px; font-family: var(--font-mono); font-size: 0.85em; color: var(--accent); }
+        .diagram-grid { display: grid; gap: 0.75rem; margin: 1.5rem 0; padding: 1.5rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; }
+        .diagram-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+        .diagram-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+        .diagram-grid.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+        .diagram-panel { padding: 1rem; background: var(--bg-code); border: 1px solid var(--border); border-radius: 6px; }
+        .diagram-panel.accent-border { border-left: 3px solid var(--accent); }
+        .diagram-panel.r { border-left: 3px solid var(--accent-2); }
+        .diagram-panel.p { border-left: 3px solid var(--accent-3); }
+        .diagram-panel.g { border-left: 3px solid var(--accent-4); }
+        .diagram-panel.b { border-left: 3px solid var(--accent-5); }
+        .diagram-panel h4 { font-family: var(--font-display); font-size: 1rem; color: var(--accent); margin-bottom: 0.5rem; }
+        .diagram-panel.r h4 { color: var(--accent-2); }
+        .diagram-panel.p h4 { color: var(--accent-3); }
+        .diagram-panel.g h4 { color: var(--accent-4); }
+        .diagram-panel.b h4 { color: var(--accent-5); }
+        .diagram-panel p, .diagram-panel ul { font-size: 0.9rem; }
+        .callout { background: var(--bg-card); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 1rem 1.25rem; margin: 1.25rem 0; }
+        .callout p { margin-bottom: 0; }
+        .callout .callout-label { font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.3rem; }
+        .quote { font-family: var(--font-display); font-size: 1.1rem; font-style: italic; color: var(--text-primary); padding: 1rem 1.5rem; border-left: 3px solid var(--accent); background: var(--bg-card); margin: 1.25rem 0; border-radius: 0 8px 8px 0; }
+        .quote .attr { display: block; margin-top: 0.5rem; font-style: normal; font-size: 0.85rem; color: var(--text-secondary); font-family: var(--font-mono); }
+        .canvas-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin: 1.25rem 0; overflow-x: auto; }
+        .canvas-wrap canvas, .canvas-wrap svg { display: block; margin: 0 auto; max-width: 100%; }
+        .control-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; margin: 1.25rem 0; }
+        .control-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+        .control-row label { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary); min-width: 160px; }
+        .control-row input[type="range"] { flex: 1; min-width: 150px; accent-color: var(--accent); }
+        .control-row select, .control-row input[type="number"] { background: var(--bg-code); border: 1px solid var(--border); color: var(--text-primary); border-radius: 4px; padding: 0.3rem 0.5rem; font-family: var(--font-mono); font-size: 0.8rem; }
+        .control-row .val { font-family: var(--font-mono); font-size: 0.85rem; color: var(--accent); min-width: 80px; text-align: right; }
+        .btn { font-family: var(--font-mono); font-size: 0.8rem; padding: 0.4rem 0.9rem; background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent); border-radius: 4px; cursor: pointer; transition: background 0.15s ease; }
+        .btn:hover { background: rgba(251,191,36,0.25); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn.secondary { background: var(--bg-code); color: var(--text-secondary); border-color: var(--border); }
+        .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.5rem; margin-top: 0.75rem; }
+        .metric { background: var(--bg-code); border: 1px solid var(--border); border-radius: 6px; padding: 0.6rem 0.8rem; text-align: center; }
+        .metric .metric-label { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; }
+        .metric .metric-value { font-family: var(--font-display); font-size: 1.25rem; color: var(--accent); font-weight: 600; margin-top: 0.2rem; }
+        .contents-list { list-style: none; padding-left: 0; counter-reset: contents; }
+        .contents-list li { counter-increment: contents; padding: 0.6rem 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 1rem; }
+        .contents-list li:last-child { border-bottom: none; }
+        .contents-list li::before { content: counter(contents, decimal-leading-zero); font-family: var(--font-mono); font-size: 0.85rem; color: var(--accent); min-width: 2rem; }
+        .contents-list a { color: var(--text-primary); text-decoration: none; }
+        .contents-list a:hover { color: var(--accent); }
+        .footer { text-align: center; padding: 3rem 1.5rem; color: var(--text-secondary); font-size: 0.85rem; border-top: 1px solid var(--border); max-width: var(--max-width); margin: 0 auto; }
+        .footer a { color: var(--accent); text-decoration: none; }
+        .katex { color: var(--text-primary); }
+        .katex-display { margin: 1rem 0; overflow-x: auto; overflow-y: hidden; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 1rem 0; }
+        th { background: var(--bg-code); color: var(--accent); font-weight: 600; text-align: left; padding: 0.6rem 0.85rem; border-bottom: 1px solid var(--border); font-family: var(--font-display); }
+        td { padding: 0.5rem 0.85rem; border-bottom: 1px solid var(--border); color: var(--text-secondary); vertical-align: top; }
+        tr:last-child td { border-bottom: none; }
+        tr:nth-child(even) td { background: rgba(13, 17, 23, 0.5); }
+        @media (max-width: 640px) {
+            .slide { padding: 3rem 1rem; min-height: auto; }
+            .slide-number { font-size: 3rem; top: 1.5rem; right: 1rem; }
+            .slide h2 { font-size: 1.5rem; }
+            .diagram-grid.cols-2, .diagram-grid.cols-3, .diagram-grid.cols-4 { grid-template-columns: 1fr; }
+            .hero h1 { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="hero">
+    <div class="series-label">Paul Wilmott Introduces Quantitative Finance &mdash; Deck 12</div>
+    <h1>Interest Rate <span class="accent">Models</span></h1>
+    <p class="subtitle">From the stochastic short rate to forward-rate models and the LIBOR market model &mdash; how the yield curve is allowed to wiggle, and what that costs to price.</p>
+
+    <div class="tags">
+        <span class="tag">short rate</span><span class="tag">Vasicek</span>
+        <span class="tag">CIR</span><span class="tag">Ho&ndash;Lee</span>
+        <span class="tag">Hull&ndash;White</span><span class="tag">HJM</span>
+        <span class="tag">BGM / LMM</span><span class="tag">calibration</span>
+    </div>
+
+    <div class="pipeline">
+        <span class="pipeline-step">$dr = u\,dt + w\,dW$</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">bond PDE</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">named one-factor</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">fit curve $\rightarrow$ HW</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">HJM / LMM</span>
+    </div>
+</header>
+
+<section class="slide" id="slide-00">
+    <div class="slide-number">00</div>
+    <h2>Topics We'll Cover</h2>
+    <ul class="contents-list">
+        <li><a href="#slide-01">The stochastic short rate</a></li>
+        <li><a href="#slide-02">The bond pricing equation</a></li>
+        <li><a href="#slide-03">Risk-neutral vs real-world drift</a></li>
+        <li><a href="#slide-04">Vasicek &mdash; mean-reverting, can go negative</a></li>
+        <li><a href="#slide-05">CIR &mdash; non-negative rates</a></li>
+        <li><a href="#slide-06">Ho&ndash;Lee and Hull&ndash;White &mdash; curve-fitting models</a></li>
+        <li><a href="#slide-07">Yield-curve fitting: the trade-off</a></li>
+        <li><a href="#slide-08">Heath&ndash;Jarrow&ndash;Morton</a></li>
+        <li><a href="#slide-09">BGM / LIBOR market model</a></li>
+        <li><a href="#slide-10">Interactive: short-rate path simulator</a></li>
+    </ul>
+</section>
+
+<section class="slide" id="slide-01">
+    <div class="slide-number">01</div>
+    <h2>The Stochastic Short Rate</h2>
+    <p>Deck 11 treated the discount rate as a deterministic curve. To price options on bonds, swaptions, caps and floors, we need to give that curve a probability distribution. The simplest way: pick the instantaneous rate $r_t$ and make it follow a stochastic differential equation</p>
+    <p>$$dr = u(r, t)\, dt + w(r, t)\, dW.$$</p>
+
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel accent-border">
+            <h4>What the short rate is</h4>
+            <p>$r_t$ is the rate at which the money-market account grows for the next instant:</p>
+            <p>$$dM_t = r_t M_t\, dt.$$</p>
+            <p>You can't trade it directly &mdash; it's an idealisation &mdash; but every bond price will be derived from it.</p>
+        </div>
+        <div class="diagram-panel p">
+            <h4>Why one factor?</h4>
+            <p>One Brownian shock drives the whole curve. In reality the level, slope and curvature each move semi-independently, but a single-factor model is the right place to start &mdash; it gets the qualitative picture right, and most exotic-rate desks layer in extra factors only when they have to.</p>
+        </div>
+    </div>
+
+    <p>A model is then a choice of the drift $u(r, t)$ and the volatility $w(r, t)$. The rest of this deck is a tour of the popular options.</p>
+
+    <div class="callout">
+        <div class="callout-label">Companion philosophy</div>
+        <p>This deck covers chapters 16, 17, 18 and 19 of Wilmott. The interactive widget on slide 10 lets you switch between Vasicek, CIR and Ho&ndash;Lee, watch the path bundle evolve, and read off the empirical mean and standard deviation of $r_T$ against the theoretical predictions.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-02">
+    <div class="slide-number">02</div>
+    <h2>The Bond Pricing Equation</h2>
+    <p>Let $V(r, t; T)$ be the price at time $t$ of a zero-coupon bond paying 1 at $T$. Ito's lemma applied to $V$:</p>
+    <p>$$dV = \left(V_t + u V_r + \tfrac{1}{2} w^2 V_{rr}\right) dt + w V_r\, dW.$$</p>
+
+    <p>The hedging argument <em>can't</em> use the underlying &mdash; $r$ isn't traded. Wilmott's trick: hedge one bond against <em>another</em> bond of different maturity. The hedge eliminates $dW$. Setting the residual to the risk-free rate $r$ and rearranging yields the bond pricing equation:</p>
+    <p>$$\boxed{\;V_t + \tfrac{1}{2} w^2 V_{rr} + (u - \lambda w) V_r - rV = 0\;}$$</p>
+
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel g">
+            <h4>The market price of risk</h4>
+            <p>$\lambda(r, t)$ is determined by the market &mdash; it appears in any traded bond's drift through</p>
+            <p>$$\text{drift of }V - rV = \lambda\, (\text{vol of }V).$$</p>
+            <p>The same $\lambda$ has to apply to every bond, otherwise there's an arbitrage between them.</p>
+        </div>
+        <div class="diagram-panel r">
+            <h4>Why this is the analogue of BS</h4>
+            <p>Black&ndash;Scholes uses $S$ to hedge an option. Here we use one bond to hedge another, because $r$ is not tradable. The PDE has the same shape: a parabolic equation with a drift that has been adjusted for risk.</p>
+        </div>
+    </div>
+
+    <p>Terminal condition: $V(r, T; T) = 1$. Boundary conditions depend on the model &mdash; on whether $r$ can go negative, hit a barrier, etc.</p>
+</section>
+
+<section class="slide" id="slide-03">
+    <div class="slide-number">03</div>
+    <h2>Risk-neutral vs Real-world Drift</h2>
+    <p>Under the real-world measure $\mathbb{P}$, the short rate follows</p>
+    <p>$$dr = u\, dt + w\, dW^\mathbb{P}.$$</p>
+
+    <p>Under the risk-neutral measure $\mathbb{Q}$ (with the money-market account as numeraire), the drift becomes</p>
+    <p>$$dr = (u - \lambda w)\, dt + w\, dW^\mathbb{Q}.$$</p>
+
+    <p>The market price of risk $\lambda$ is exactly the change-of-measure quantity that takes us from $\mathbb{P}$ to $\mathbb{Q}$. Once we're in $\mathbb{Q}$, every traded asset divided by $M_t$ is a martingale.</p>
+
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel b">
+            <h4>For pricing</h4>
+            <p>Use $\mathbb{Q}$. The bond price is the discounted expectation of its terminal payoff:</p>
+            <p>$$V(r, t; T) = \mathbb{E}^\mathbb{Q}\!\left[ e^{-\int_t^T r_s\, ds} \,\Big|\, r_t = r\right].$$</p>
+        </div>
+        <div class="diagram-panel p">
+            <h4>For risk management</h4>
+            <p>Use $\mathbb{P}$. Things like value-at-risk, P&amp;L distributions and scenario tests need the <em>real-world</em> distribution of $r_t$ &mdash; not the one that's been adjusted to make the prices arbitrage-free.</p>
+        </div>
+    </div>
+
+    <p>This is a recurring source of confusion. Pricing and risk live under different measures, and the same model can &mdash; and routinely does &mdash; produce different drifts depending on what question is being asked.</p>
+
+    <div class="callout">
+        <div class="callout-label">A pragmatic shortcut</div>
+        <p>Many model parameters are quoted directly under $\mathbb{Q}$ &mdash; calibrated to traded option prices &mdash; so the market price of risk never appears explicitly. The literature usually states the SDE under $\mathbb{Q}$ from the start.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-04">
+    <div class="slide-number">04</div>
+    <h2>Vasicek &mdash; Mean-reverting, Can Go Negative</h2>
+    <p>The first named one-factor model. Linear drift, constant volatility:</p>
+    <p>$$dr = (a - br)\, dt + \sigma\, dW.$$</p>
+
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel accent-border">
+            <h4>What the parameters mean</h4>
+            <ul>
+                <li>$b > 0$: <em>speed</em> of mean reversion. Larger $b$ means $r$ snaps back to the long-run mean faster.</li>
+                <li>$a/b$: <em>long-run mean</em>. $r$ is drawn toward this level.</li>
+                <li>$\sigma$: <em>volatility</em> of the short rate.</li>
+            </ul>
+        </div>
+        <div class="diagram-panel g">
+            <h4>Distribution of $r_T$</h4>
+            <p>Gaussian:</p>
+            <p>$$\mathbb{E}[r_T] = e^{-bT} r_0 + \frac{a}{b}(1 - e^{-bT}),$$</p>
+            <p>$$\mathrm{Var}[r_T] = \frac{\sigma^2}{2b}(1 - e^{-2bT}).$$</p>
+            <p>Stationary distribution exists at $T \to \infty$.</p>
+        </div>
+    </div>
+
+    <p>Bond prices have a clean closed form: $V(r, t; T) = A(t, T) e^{-B(t, T) r}$, with $A$ and $B$ given by integrating ODEs &mdash; the model is "affine" in the short rate, the prototype of the affine-term-structure family.</p>
+
+    <p><strong>The drawback.</strong> Because $r$ is Gaussian, it can go negative with positive probability. In the 1990s this was considered an embarrassment. After 2014 the eurozone, Switzerland and Japan ran with negative policy rates for years &mdash; and the Vasicek property suddenly looked less like a flaw and more like a feature.</p>
+</section>
+
+<section class="slide" id="slide-05">
+    <div class="slide-number">05</div>
+    <h2>Cox&ndash;Ingersoll&ndash;Ross &mdash; Non-negative Rates</h2>
+    <p>The same drift as Vasicek, but the volatility scales with $\sqrt{r}$:</p>
+    <p>$$dr = (a - br)\, dt + \sigma \sqrt{r}\, dW.$$</p>
+
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel b">
+            <h4>Why it stays non-negative</h4>
+            <p>As $r \to 0$, the volatility vanishes faster than the drift, so the SDE pushes $r$ back upward. The <strong>Feller condition</strong></p>
+            <p>$$2a \ge \sigma^2$$</p>
+            <p>guarantees that $r$ never hits zero. If it's violated, $r$ can touch zero but is instantly reflected away.</p>
+        </div>
+        <div class="diagram-panel r">
+            <h4>Distribution of $r_T$</h4>
+            <p>A non-central chi-squared distribution. Skewed, with a long right tail &mdash; capturing the empirical observation that rate moves are bigger when rates are higher.</p>
+        </div>
+    </div>
+
+    <p>Like Vasicek, CIR is affine: $V(r, t; T) = A(t, T) e^{-B(t, T) r}$, with different $A$ and $B$. Closed-form bond options exist, though the expressions get messy.</p>
+
+    <h3>Vasicek vs. CIR &mdash; which one?</h3>
+    <table>
+        <thead><tr><th>Property</th><th>Vasicek</th><th>CIR</th></tr></thead>
+        <tbody>
+            <tr><td>SDE</td><td>$dr = (a-br)\,dt + \sigma\,dW$</td><td>$dr = (a-br)\,dt + \sigma \sqrt{r}\,dW$</td></tr>
+            <tr><td>Can $r$ be negative?</td><td>Yes</td><td>No (with Feller)</td></tr>
+            <tr><td>Distribution of $r_T$</td><td>Gaussian</td><td>Non-central $\chi^2$</td></tr>
+            <tr><td>Vol scales with rate?</td><td>No</td><td>Yes</td></tr>
+            <tr><td>Affine?</td><td>Yes</td><td>Yes</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<section class="slide" id="slide-06">
+    <div class="slide-number">06</div>
+    <h2>Ho&ndash;Lee and Hull&ndash;White &mdash; Curve-fitting Models</h2>
+    <p>Vasicek and CIR have a small number of parameters; they can't possibly reproduce an arbitrary observed yield curve. The fix: make the drift <em>time-dependent</em>.</p>
+
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel accent-border">
+            <h4>Ho&ndash;Lee</h4>
+            <p>The simplest possible no-arbitrage model:</p>
+            <p>$$dr = \theta(t)\, dt + \sigma\, dW.$$</p>
+            <p>$\theta(t)$ is chosen so that the model exactly reproduces today's bond curve. Constant volatility, no mean reversion &mdash; $r$ wanders freely.</p>
+        </div>
+        <div class="diagram-panel g">
+            <h4>Hull&ndash;White (extended Vasicek)</h4>
+            <p>Vasicek with a time-dependent drift target:</p>
+            <p>$$dr = (\theta(t) - br)\, dt + \sigma\, dW.$$</p>
+            <p>Same affine structure as Vasicek; $\theta(t)$ is fitted to today's curve, while $b$ and $\sigma$ control the volatility structure.</p>
+        </div>
+    </div>
+
+    <p>For Hull&ndash;White there's a closed form for $\theta(t)$ in terms of the instantaneous forward rate $f(0, t)$ today:</p>
+    <p>$$\theta(t) = \frac{\partial f(0, t)}{\partial t} + b\, f(0, t) + \frac{\sigma^2}{2b}(1 - e^{-2bt}).$$</p>
+
+    <p>Plug in and the model prices every traded bond exactly. It then has only two free parameters ($b$, $\sigma$), which are calibrated to traded options &mdash; caps, swaptions &mdash; not to the curve itself.</p>
+
+    <div class="callout">
+        <div class="callout-label">The trade-off</div>
+        <p>You pick up curve-fitting at the cost of giving up parameter stability over time: today's $\theta(t)$ won't be tomorrow's. Anything you derive about how the curve <em>moves</em> &mdash; e.g. forward-rate dynamics &mdash; depends on the entire function $\theta$, not just a number.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-07">
+    <div class="slide-number">07</div>
+    <h2>Yield-curve Fitting: the Trade-off</h2>
+
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel p">
+            <h4>Pros</h4>
+            <ul>
+                <li>You automatically reprice every traded bond. No pricing mistakes on the underlyings of your derivatives.</li>
+                <li>Calibration is a finite, well-posed problem &mdash; pick $\theta(t)$ to match observed prices.</li>
+                <li>Easy to sell to a trading desk that wants "no arb to today's curve."</li>
+            </ul>
+        </div>
+        <div class="diagram-panel r">
+            <h4>Cons</h4>
+            <ul>
+                <li>$\theta(t)$ depends on today's curve and will change tomorrow &mdash; the model is structurally non-stationary.</li>
+                <li>Stress-testing or scenario analysis becomes ambiguous: what is "the model"?</li>
+                <li>You can <em>over-fit</em>. A jagged $\theta(t)$ will reproduce every quirk in the curve, including the ones that come from stale prices and bid&ndash;ask noise.</li>
+            </ul>
+        </div>
+    </div>
+
+    <p>This isn't unique to rates &mdash; volatility models that fit the surface (Dupire local vol, SLV) have the same problem &mdash; but it's most acute in interest rates because the curve has thirty-plus tenors and traders look at every one.</p>
+
+    <h3>Common compromise</h3>
+    <p>Fit the model to a smooth interpolation of the curve rather than every market quote, and let small bid&ndash;ask mismatches go. Some shops re-calibrate $\theta(t)$ daily; others keep it weekly and report the small mispricings as a "model adjustment."</p>
+</section>
+
+<section class="slide" id="slide-08">
+    <div class="slide-number">08</div>
+    <h2>The Heath&ndash;Jarrow&ndash;Morton Framework</h2>
+    <p>Short-rate models price <em>through</em> the short rate &mdash; bond prices fall out. HJM goes the other way: model the <em>forward rates</em> $f(t, T)$ directly:</p>
+    <p>$$df(t, T) = \mu(t, T)\, dt + \sigma(t, T)\, dW.$$</p>
+
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel accent-border">
+            <h4>The no-arbitrage drift condition</h4>
+            <p>If $\sigma(t, T)$ is your choice (free), then $\mu(t, T)$ is <em>not</em> free &mdash; it's pinned down by the requirement that bond prices remain arbitrage-free:</p>
+            <p>$$\mu(t, T) = \sigma(t, T) \int_t^T \sigma(t, s)\, ds.$$</p>
+            <p>Drift is the integral of vol against vol. The famous HJM result.</p>
+        </div>
+        <div class="diagram-panel g">
+            <h4>What you get</h4>
+            <ul>
+                <li>Automatic fit to today's curve, since today's $f(0, T)$ is an initial condition.</li>
+                <li>Full freedom to specify how forwards co-vary across maturities &mdash; a multi-factor model is just $\sigma$ taking values in $\mathbb{R}^d$.</li>
+                <li>Short-rate models drop out as special cases by collapsing the $T$-dependence of $\sigma$.</li>
+            </ul>
+        </div>
+    </div>
+
+    <p>HJM is the right framework conceptually but it has a sting: forward rates are non-Markov in general, so you can't always reduce the price to a PDE in finitely many variables. In practice, special $\sigma$ choices (separable, Markovian) are picked so that the model becomes computationally tractable.</p>
+
+    <div class="callout">
+        <div class="callout-label">The takeaway</div>
+        <p>HJM tells you that once you've picked the volatility structure of the forwards, the no-arbitrage drift is no longer your decision. This is the rates analogue of the BS result that picking $\sigma$ pins down option prices.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-09">
+    <div class="slide-number">09</div>
+    <h2>BGM / LIBOR Market Model</h2>
+    <p>HJM models the <em>instantaneous</em> forward rate &mdash; a continuum. The market trades <em>discrete</em> forward LIBOR/SOFR rates, indexed by maturity dates $T_0 < T_1 < \cdots < T_n$. The BGM (Brace&ndash;Gatarek&ndash;Musiela) or LIBOR market model takes those market quantities as the primitives:</p>
+    <p>$$dL_i(t) = \mu_i(t)\, L_i(t)\, dt + \sigma_i(t)\, L_i(t)\, dW_i,$$</p>
+    <p>i.e. each forward LIBOR is log-normal under its own appropriate forward measure.</p>
+
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel b">
+            <h4>Why this is a win</h4>
+            <ul>
+                <li>The market quotes caps and floors using a log-normal Black formula &mdash; BGM is the model that <em>justifies</em> using that formula.</li>
+                <li>Forward rates are tradable objects, so calibration is more direct.</li>
+                <li>Multi-factor versions ($d$ Brownians driving $n$ forwards) are simple to set up &mdash; just pick the correlation structure.</li>
+            </ul>
+        </div>
+        <div class="diagram-panel p">
+            <h4>The catch</h4>
+            <ul>
+                <li>Each $L_i$ is log-normal under <em>its own</em> $T_{i+1}$-forward measure. Pricing a payoff that depends on several $L_i$ requires changing measure, which adds Girsanov drift adjustments.</li>
+                <li>For exotic payoffs, the model is normally simulated by Monte Carlo &mdash; not the cheapest exotic-rate pricer.</li>
+            </ul>
+        </div>
+    </div>
+
+    <p>BGM has been the workhorse of fixed-income derivatives desks since the late 1990s. Recent decades have added stochastic volatility (SABR-LMM) on top to fit the caps and swaptions <em>smile</em> as well as the at-the-money rates.</p>
+
+    <div class="callout">
+        <div class="callout-label">After LIBOR</div>
+        <p>With LIBOR retired in 2023, the same machinery is now applied to forward SOFR / SONIA / &euro;STR rates. The mathematics is unchanged &mdash; the day-count conventions and the fixing mechanics differ.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-10">
+    <div class="slide-number">10</div>
+    <h2>Interactive: Short-rate Path Simulator</h2>
+    <p>Pick a model (Vasicek / CIR / Ho&ndash;Lee), pick $r_0$, the mean-reversion speed $b$, the long-run-mean parameter $a$, the volatility $\sigma$, the horizon $T$ and the number of paths $N$. The widget simulates a bundle of short-rate paths, plots them with the running mean across paths, and draws a histogram of $r_T$ on the right.</p>
+
+    <div class="canvas-wrap">
+        <canvas id="ir-canvas" width="860" height="340"></canvas>
+    </div>
+
+    <div class="control-panel">
+        <div class="control-row">
+            <label for="model-select">Model</label>
+            <select id="model-select">
+                <option value="vasicek">Vasicek</option>
+                <option value="cir">CIR</option>
+                <option value="holee">Ho&ndash;Lee</option>
+            </select>
+        </div>
+        <div class="control-row">
+            <label for="r0-slider">$r_0$</label>
+            <input type="range" id="r0-slider" min="-0.02" max="0.10" step="0.005" value="0.04">
+            <span class="val" id="r0-val">0.040</span>
+        </div>
+        <div class="control-row">
+            <label for="b-slider">Mean-reversion speed $b$</label>
+            <input type="range" id="b-slider" min="0" max="1.5" step="0.01" value="0.3">
+            <span class="val" id="b-val">0.30</span>
+        </div>
+        <div class="control-row">
+            <label for="a-slider">Long-run mean ($a$/$b$)</label>
+            <input type="range" id="a-slider" min="0" max="0.10" step="0.002" value="0.05">
+            <span class="val" id="a-val">0.050</span>
+        </div>
+        <div class="control-row">
+            <label for="sig-slider">Volatility $\sigma$</label>
+            <input type="range" id="sig-slider" min="0.001" max="0.05" step="0.001" value="0.012">
+            <span class="val" id="sig-val">0.012</span>
+        </div>
+        <div class="control-row">
+            <label for="T-slider">Horizon $T$ (yr)</label>
+            <input type="range" id="T-slider" min="0.25" max="20" step="0.25" value="5">
+            <span class="val" id="T-val">5.00</span>
+        </div>
+        <div class="control-row">
+            <label for="N-slider">Paths $N$</label>
+            <input type="range" id="N-slider" min="5" max="200" step="5" value="50">
+            <span class="val" id="N-val">50</span>
+        </div>
+        <div class="control-row">
+            <button id="resim-btn" class="btn">Resimulate</button>
+        </div>
+        <div class="metric-grid">
+            <div class="metric"><div class="metric-label">Emp. mean $r_T$</div><div class="metric-value" id="m-mean">&mdash;</div></div>
+            <div class="metric"><div class="metric-label">Emp. std $r_T$</div><div class="metric-value" id="m-std">&mdash;</div></div>
+            <div class="metric"><div class="metric-label">Theor. mean (Vasicek)</div><div class="metric-value" id="m-tmean">&mdash;</div></div>
+            <div class="metric"><div class="metric-label">P($r_T &lt; 0$)</div><div class="metric-value" id="m-neg">&mdash;</div></div>
+        </div>
+    </div>
+
+    <p>Notice how Vasicek lets the paths cross zero whenever $r_0$, $a/b$ or $\sigma$ pulls them down, how CIR pins them at zero from below, and how Ho&ndash;Lee &mdash; with no mean reversion &mdash; lets the paths fan out unboundedly.</p>
+</section>
+
+<footer class="footer">
+    <p>Deck 12 of the <a href="https://github.com/BrendanJamesLynskey/Wilmott_QF_Hub">Paul Wilmott Introduces Quantitative Finance &mdash; Companion Series</a>.</p>
+    <p style="margin-top: 0.6rem;">Companion to chapters 16, 17, 18 and 19 of <em>Paul Wilmott Introduces Quantitative Finance</em>, 2nd edition (Wiley, 2007).</p>
+</footer>
+
+<script>
+(function() {
+    const $ = id => document.getElementById(id);
+    const sR0 = $('r0-slider'), sB = $('b-slider'), sA = $('a-slider'),
+          sSig = $('sig-slider'), sT = $('T-slider'), sN = $('N-slider'),
+          sel = $('model-select'), btn = $('resim-btn');
+    const vR0 = $('r0-val'), vB = $('b-val'), vA = $('a-val'),
+          vSig = $('sig-val'), vT = $('T-val'), vN = $('N-val');
+    const mMean = $('m-mean'), mStd = $('m-std'), mTMean = $('m-tmean'), mNeg = $('m-neg');
+    const canvas = $('ir-canvas'), ctx = canvas.getContext('2d');
+
+    function fmt(x, dp) { return x.toFixed(dp == null ? 3 : dp); }
+
+    // Box-Muller
+    function rnorm() {
+        let u = 0, v = 0;
+        while (u === 0) u = Math.random();
+        while (v === 0) v = Math.random();
+        return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+    }
+
+    function simulate() {
+        const model = sel.value;
+        const r0 = +sR0.value, b = +sB.value, theta = +sA.value,
+              sigma = +sSig.value, T = +sT.value, N = +sN.value;
+        const a = theta * b; // store long-run mean as theta, drift uses a = theta*b
+        const steps = 200;
+        const dt = T / steps;
+        const sqdt = Math.sqrt(dt);
+        const paths = [];
+        for (let p = 0; p < N; p++) {
+            const path = new Float64Array(steps + 1);
+            path[0] = r0;
+            for (let i = 0; i < steps; i++) {
+                const r = path[i];
+                let drift, vol;
+                if (model === 'vasicek') {
+                    drift = a - b * r;
+                    vol = sigma;
+                } else if (model === 'cir') {
+                    drift = a - b * r;
+                    vol = sigma * Math.sqrt(Math.max(r, 0));
+                } else { // ho-lee
+                    drift = a; // simplified, theta(t) constant
+                    vol = sigma;
+                }
+                let next = r + drift * dt + vol * sqdt * rnorm();
+                if (model === 'cir' && next < 0) next = 0;
+                path[i + 1] = next;
+            }
+            paths.push(path);
+        }
+        return { paths, steps, dt, T, model, r0, b, a, sigma, theta };
+    }
+
+    let sim = null;
+
+    function draw() {
+        if (!sim) sim = simulate();
+        const { paths, steps, dt, T, model, r0, b, a, sigma, theta } = sim;
+
+        vR0.textContent = fmt(+sR0.value);
+        vB.textContent = fmt(+sB.value, 2);
+        vA.textContent = fmt(+sA.value);
+        vSig.textContent = fmt(+sSig.value);
+        vT.textContent = (+sT.value).toFixed(2);
+        vN.textContent = (+sN.value).toString();
+
+        // stats at T
+        const rT = paths.map(p => p[steps]);
+        const mean = rT.reduce((s, x) => s + x, 0) / rT.length;
+        const variance = rT.reduce((s, x) => s + (x - mean) * (x - mean), 0) / rT.length;
+        const std = Math.sqrt(variance);
+        const nNeg = rT.filter(x => x < 0).length;
+
+        let tmean = NaN;
+        if (model === 'vasicek') {
+            tmean = b > 0 ? Math.exp(-b * T) * r0 + theta * (1 - Math.exp(-b * T)) : r0 + a * T;
+        } else if (model === 'cir') {
+            tmean = b > 0 ? Math.exp(-b * T) * r0 + theta * (1 - Math.exp(-b * T)) : r0 + a * T;
+        } else {
+            tmean = r0 + a * T;
+        }
+
+        mMean.textContent = fmt(mean);
+        mStd.textContent = fmt(std);
+        mTMean.textContent = isFinite(tmean) ? fmt(tmean) : '—';
+        mNeg.textContent = (100 * nNeg / rT.length).toFixed(1) + '%';
+
+        // draw paths + histogram
+        const W = canvas.width, H = canvas.height;
+        ctx.clearRect(0, 0, W, H);
+
+        const pathsW = W * 0.65, histW = W * 0.35;
+        const padT = 30, padB = 36, padL = 50, padR = 12;
+
+        // y-range from all path values
+        let rMin = Infinity, rMax = -Infinity;
+        for (const p of paths) for (let i = 0; i <= steps; i++) {
+            if (p[i] < rMin) rMin = p[i];
+            if (p[i] > rMax) rMax = p[i];
+        }
+        rMin = Math.min(rMin, -0.005);
+        rMax = Math.max(rMax, theta + 2 * sigma * Math.sqrt(T));
+        const pad = (rMax - rMin) * 0.05;
+        rMin -= pad; rMax += pad;
+
+        const x2px = t => padL + (t / T) * (pathsW - padL - padR);
+        const y2px = r => padT + (H - padT - padB) - (r - rMin) / (rMax - rMin) * (H - padT - padB);
+
+        // grid
+        ctx.strokeStyle = '#21262d'; ctx.lineWidth = 1;
+        for (let i = 0; i <= 4; i++) {
+            const yy = padT + i / 4 * (H - padT - padB);
+            ctx.beginPath(); ctx.moveTo(padL, yy); ctx.lineTo(pathsW - padR, yy); ctx.stroke();
+        }
+        // zero line if visible
+        if (rMin < 0 && rMax > 0) {
+            ctx.strokeStyle = '#3a4252'; ctx.lineWidth = 1.5;
+            const y0 = y2px(0);
+            ctx.beginPath(); ctx.moveTo(padL, y0); ctx.lineTo(pathsW - padR, y0); ctx.stroke();
+        }
+        // long-run-mean line
+        if (model !== 'holee') {
+            const yLR = y2px(theta);
+            ctx.strokeStyle = '#f472b6'; ctx.setLineDash([4, 3]); ctx.lineWidth = 1.2;
+            ctx.beginPath(); ctx.moveTo(padL, yLR); ctx.lineTo(pathsW - padR, yLR); ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        // paths (limit to first 40 for visibility)
+        const showN = Math.min(paths.length, 40);
+        ctx.lineWidth = 1.0;
+        for (let p = 0; p < showN; p++) {
+            const path = paths[p];
+            const hue = (p * 37) % 360;
+            ctx.strokeStyle = `hsla(${hue}, 60%, 60%, 0.35)`;
+            ctx.beginPath();
+            for (let i = 0; i <= steps; i++) {
+                const px = x2px(i * dt), py = y2px(path[i]);
+                if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+            }
+            ctx.stroke();
+        }
+
+        // running mean across all paths
+        const meanPath = new Float64Array(steps + 1);
+        for (let i = 0; i <= steps; i++) {
+            let s = 0;
+            for (const p of paths) s += p[i];
+            meanPath[i] = s / paths.length;
+        }
+        ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        for (let i = 0; i <= steps; i++) {
+            const px = x2px(i * dt), py = y2px(meanPath[i]);
+            if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+
+        // axes labels
+        ctx.fillStyle = '#8b949e'; ctx.font = '11px JetBrains Mono';
+        ctx.fillText('t=0', padL, H - 18);
+        ctx.fillText('t=' + T.toFixed(1), pathsW - 40, H - 18);
+        ctx.fillText(fmt(rMax), 4, padT + 8);
+        ctx.fillText(fmt(rMin), 4, H - padB);
+        ctx.fillText('short rate paths', padL, padT - 10);
+        ctx.fillStyle = '#fbbf24'; ctx.fillText('— mean', padL + 4, padT + 12);
+
+        // --- histogram of r_T ---
+        const hx0 = pathsW;
+        const hMin = rMin, hMax = rMax;
+        const bins = 24;
+        const counts = new Array(bins).fill(0);
+        for (const v of rT) {
+            const idx = Math.max(0, Math.min(bins - 1, Math.floor((v - hMin) / (hMax - hMin) * bins)));
+            counts[idx]++;
+        }
+        const cMax = Math.max(...counts) || 1;
+        const histInnerW = histW - 16;
+
+        // background
+        ctx.strokeStyle = '#21262d'; ctx.lineWidth = 1;
+        ctx.strokeRect(hx0 + 4, padT, histInnerW, H - padT - padB);
+
+        const histBarH = (H - padT - padB) / bins;
+        for (let i = 0; i < bins; i++) {
+            const barLen = (counts[i] / cMax) * (histInnerW - 6);
+            const py = padT + (bins - 1 - i) * histBarH; // top-down: large r at top
+            ctx.fillStyle = '#a78bfa';
+            ctx.fillRect(hx0 + 6, py, barLen, histBarH - 1.5);
+        }
+
+        // mean line
+        const muY = y2px(mean);
+        ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(hx0 + 4, muY); ctx.lineTo(hx0 + 4 + histInnerW, muY); ctx.stroke();
+
+        ctx.fillStyle = '#8b949e'; ctx.font = '11px JetBrains Mono';
+        ctx.fillText('histogram r_T', hx0 + 4, padT - 10);
+    }
+
+    function resim() {
+        sim = simulate();
+        draw();
+    }
+
+    [sR0, sB, sA, sSig, sT, sN, sel].forEach(el => el.addEventListener('input', resim));
+    btn.addEventListener('click', resim);
+    resim();
+})();
+</script>
+</body>
+</html>
